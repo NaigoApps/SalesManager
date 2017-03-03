@@ -20,8 +20,8 @@ import java.sql.Statement;
 public class DBManager {
     
     public static final String DB_NAME = "affarefatto";
-    public static final String DB_USER = "root";
-    public static final String DB_PASS = "";
+    public static final String DB_USER = "lamine";
+    public static final String DB_PASS = "lamine";
     private static Connection conn;
     private static PreparedStatement statement;
     

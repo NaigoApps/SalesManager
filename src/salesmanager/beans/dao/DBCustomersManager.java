@@ -35,7 +35,7 @@ public class DBCustomersManager extends DBManager{
     }
 
     public static Customer[] getCustomers() throws SQLException {
-        String query = "SELECT * FROM Customers ORDER BY surname";
+        String query = "SELECT * FROM customers ORDER BY surname";
         dbConnect();
         Customer[] customers = parseCustomersResultSet(dbSelect(query));
         dbDisconnect();
@@ -43,7 +43,7 @@ public class DBCustomersManager extends DBManager{
     }
     
     public static Customer[] getCustomers(String like) throws SQLException {
-        String query = "SELECT * FROM Customers WHERE LOWER(surname) LIKE LOWER('%" + like + "%') OR LOWER(name) LIKE LOWER('%" + like + "%') ORDER BY surname";
+        String query = "SELECT * FROM customers WHERE LOWER(surname) LIKE LOWER('%" + like + "%') OR LOWER(name) LIKE LOWER('%" + like + "%') ORDER BY surname";
         dbConnect();
         Customer[] customers = parseCustomersResultSet(dbSelect(query));
         dbDisconnect();
@@ -51,7 +51,7 @@ public class DBCustomersManager extends DBManager{
     }
 
     public static boolean addCustomer(Customer c) throws SQLException {
-        String query = "INSERT INTO Customers(name,surname,cf,piva,telephone,address,document,documentRelease,documentExpiration,documentEntity,cap,city,district) "
+        String query = "INSERT INTO customers(name,surname,cf,piva,telephone,address,document,documentRelease,documentExpiration,documentEntity,cap,city,district) "
                 + "VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?)";
         dbConnect();
         PreparedStatement ps = prepareStatement(query);
@@ -74,7 +74,7 @@ public class DBCustomersManager extends DBManager{
     }
 
     public static boolean editCustomer(Customer c) throws SQLException {
-        String query = "UPDATE Customers SET "
+        String query = "UPDATE customers SET "
                 + "name = ?,"
                 + "surname = ?,"
                 + "cf = ?,"
@@ -111,7 +111,7 @@ public class DBCustomersManager extends DBManager{
     }
 
     public static boolean removeCustomer(Customer c) throws SQLException {
-        String query = "DELETE FROM Customers WHERE code = " + c.getCode();
+        String query = "DELETE FROM customers WHERE code = " + c.getCode();
         dbConnect();
         boolean res = dbUpdate(query);
         dbDisconnect();
@@ -119,7 +119,7 @@ public class DBCustomersManager extends DBManager{
     }
 
     public static Customer getCustomer(int code) throws SQLException {
-        String query = "SELECT * FROM Customers WHERE code = " + code;
+        String query = "SELECT * FROM customers WHERE code = " + code;
         dbConnect();
         Customer[] customers = parseCustomersResultSet(dbSelect(query));
         dbDisconnect();

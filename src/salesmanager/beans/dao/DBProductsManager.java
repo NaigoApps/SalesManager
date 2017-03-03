@@ -11,19 +11,20 @@ import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Date;
 import java.util.GregorianCalendar;
+import java.util.List;
 import salesmanager.beans.BeansUtil;
-import salesmanager.beans.DeliveryDocument;
 import salesmanager.beans.Invoice;
 import salesmanager.beans.Movement;
 import salesmanager.beans.Product;
 import salesmanager.graphics.LoadingFrame;
-import salesmanager.graphics.Main;
 
 /**
  *
  * @author Lorenzo
  */
 public class DBProductsManager extends DBManager {
+
+    public static final int MAX_RESULTS = 50;
 
     private static Product resultSetToProduct(ResultSet rs) throws SQLException {
         return BeansUtil.copyOf(rs, new Product());
@@ -50,7 +51,7 @@ public class DBProductsManager extends DBManager {
     }
 
     public static Movement[] getMovements(Product p) throws SQLException {
-        String query = "SELECT * FROM Movements WHERE "
+        String query = "SELECT * FROM movements WHERE "
                 + "product = " + p.getCode() + ";";
         dbConnect();
         Movement[] movements = parseMovementsResultSet(dbSelect(query));
@@ -58,33 +59,44 @@ public class DBProductsManager extends DBManager {
         return movements;
     }
 
-    public static void updateProducts() throws SQLException {
+    public static void updateProducts(List<String> errors) throws SQLException {
         Product[] toUpdate = getExpiredProducts();
         GregorianCalendar gc = new GregorianCalendar();
         for (int i = 0; i < toUpdate.length; i++) {
-            LoadingFrame.setPercent(i*100/toUpdate.length);
-            gc.setTime(DBDeliveryManager.getProductDeliveryDocument(toUpdate[i]).getDocumentDate());
-            gc.add(Calendar.DAY_OF_MONTH, 60);
-            toUpdate[i].setPrice(toUpdate[i].getPrice() / 2);
-            DBMovementsManager.addMovement(new Movement(
-                    toUpdate[i].getCode(),
-                    Movement.EXP,
-                    "Prezzo dimezzato dopo 60 giorni",
-                    gc.getTime(),
-                    toUpdate[i].getPrice(),
-                    toUpdate[i].getCommission(),
-                    -toUpdate[i].getPrice()));
-            DBProductsManager.editProduct(toUpdate[i]);
+            try {
+                LoadingFrame.setPercent(i * 100 / toUpdate.length);
+                gc.setTime(DBDeliveryManager.getProductDeliveryDocument(toUpdate[i]).getDocumentDate());
+                gc.add(Calendar.DAY_OF_MONTH, 60);
+                toUpdate[i].setPrice(toUpdate[i].getPrice() / 2);
+                DBMovementsManager.addMovement(new Movement(
+                        toUpdate[i].getCode(),
+                        Movement.EXP,
+                        "Prezzo dimezzato dopo 60 giorni",
+                        gc.getTime(),
+                        toUpdate[i].getPrice(),
+                        toUpdate[i].getCommission(),
+                        -toUpdate[i].getPrice()));
+                DBProductsManager.editProduct(toUpdate[i]);
+            } catch (Exception ex) {
+                errors.add("Errore prodotto " + toUpdate[i].getCode());
+            }
         }
     }
 
+    /**
+     *
+     * @return Products that have been in store for more than 60 days. Not
+     * including already sold products, already given back products and already
+     * expired products
+     * @throws SQLException
+     */
     public static Product[] getExpiredProducts() throws SQLException {
-        String query = "SELECT p.* FROM Products p, Movements m WHERE "
+        String query = "SELECT p.* FROM products p, movements m WHERE "
                 + "p.code = m.product AND "
                 + "m.causal = \"PCV\" AND "
-                + "NOT EXISTS (SELECT * FROM Movements m1 WHERE m1.product = p.code AND m1.causal = \"EXP\") AND "
-                + "NOT EXISTS (SELECT * FROM Movements m1 WHERE m1.product = p.code AND m1.causal = \"RES\") AND "
-                + "NOT EXISTS (SELECT * FROM Movements m1 WHERE m1.product = p.code AND m1.causal = \"CPM\") AND "
+                + "NOT EXISTS (SELECT * FROM movements m1 WHERE m1.product = p.code AND m1.causal = \"EXP\") AND "
+                + "NOT EXISTS (SELECT * FROM movements m1 WHERE m1.product = p.code AND m1.causal = \"RES\") AND "
+                + "NOT EXISTS (SELECT * FROM movements m1 WHERE m1.product = p.code AND m1.causal = \"CPM\") AND "
                 + "DATE_ADD(m.operationDate,INTERVAL 60 DAY) < CURDATE();";
         dbConnect();
         Product[] products = parseProductsResultSet(dbSelect(query));
@@ -92,10 +104,62 @@ public class DBProductsManager extends DBManager {
         return products;
     }
 
-    public static Product[] getFromInvoiceProducts(int code) throws SQLException {
-        String query = "SELECT p.* FROM Products p, Invoices i WHERE p.invoice = i.code AND i.code = " + code;
+    public static Product[] getInvoiceProducts(int code) throws SQLException {
+        String query = "SELECT p.* FROM products p, invoices i WHERE p.invoice = i.code AND i.code = " + code;
         dbConnect();
         Product[] products = parseProductsResultSet(dbSelect(query));
+        dbDisconnect();
+        return products;
+    }
+
+    public static Movement getProductArrivalMovement(Product p) throws SQLException {
+        String query = "SELECT * FROM movements WHERE "
+                + "product = " + p.getCode() + " AND "
+                + "causal = \"PCV\";";
+        dbConnect();
+        Movement[] movements = parseMovementsResultSet(dbSelect(query));
+        dbDisconnect();
+        if (movements != null && movements.length == 1) {
+            return movements[0];
+        } else {
+            throw new SQLException("Movimento di arrivo duplicato per il prodotto " + p.getCode());
+        }
+    }
+
+    public static Movement getProductSoldMovement(Product p) throws SQLException {
+        String query = "SELECT * FROM movements WHERE "
+                + "product = " + p.getCode() + " AND "
+                + "causal = \"CPM\";";
+        dbConnect();
+        Movement[] movements = parseMovementsResultSet(dbSelect(query));
+        dbDisconnect();
+        if (movements != null && movements.length == 1) {
+            return movements[0];
+        } else {
+            throw new SQLException("Movimento di vendita duplicato per il prodotto " + p.getCode());
+        }
+    }
+
+    public static Movement getProductBackMovement(Product p) throws SQLException {
+        String query = "SELECT * FROM movements WHERE "
+                + "product = " + p.getCode() + " AND "
+                + "causal = \"RES\";";
+        dbConnect();
+        Movement[] movements = parseMovementsResultSet(dbSelect(query));
+        dbDisconnect();
+        if (movements != null && movements.length == 1) {
+            return movements[0];
+        } else {
+            throw new SQLException("Movimento di restituzione duplicato per il prodotto " + p.getCode());
+        }
+    }
+
+    public static int countOnSaleProducts() throws SQLException {
+        String query = "SELECT count(*) FROM products p WHERE "
+                + "NOT EXISTS (SELECT * FROM movements m WHERE m.product = p.code AND "
+                + "(m.causal = \"RES\" OR m.causal = \"CPM\"));";
+        dbConnect();
+        int products = DBManager.parseValueResultSet(dbSelect(query)).intValue();
         dbDisconnect();
         return products;
     }
@@ -103,24 +167,10 @@ public class DBProductsManager extends DBManager {
     private DBProductsManager() {
     }
 
-    public static Product[] getArrivedProducts(Date from, Date to) throws SQLException {
-        Date sqlFrom = new java.sql.Date(from.getTime());
-        Date sqlTo = new java.sql.Date(to.getTime());
-        String query = "SELECT p.* FROM Products p, Movements m WHERE "
-                + "p.code = m.product AND "
-                + "m.causal = \"PCV\" AND "
-                + "m.operationDate >= '" + sqlFrom + "' AND "
-                + "m.operationDate <= '" + sqlTo + "';";
-        dbConnect();
-        Product[] products = parseProductsResultSet(dbSelect(query));
-        dbDisconnect();
-        return products;
-    }
-
     public static Product[] getSoldProducts(Date from, Date to) throws SQLException {
         Date sqlFrom = new java.sql.Date(from.getTime());
         Date sqlTo = new java.sql.Date(to.getTime());
-        String query = "SELECT p.* FROM Products p, Movements m WHERE "
+        String query = "SELECT p.* FROM products p, movements m WHERE "
                 + "p.code = m.product AND "
                 + "m.causal = \"CPM\" AND "
                 + "m.operationDate >= '" + sqlFrom + "' AND "
@@ -132,7 +182,7 @@ public class DBProductsManager extends DBManager {
     }
 
     public static Product[] getFromDeliveryDocumentProducts(int document) throws SQLException {
-        String query = "SELECT p.* FROM Products p, Movements m WHERE "
+        String query = "SELECT p.* FROM products p, movements m WHERE "
                 + "p.code = m.product AND "
                 + "p.deliveryDocument = " + document + " AND "
                 + "m.causal = \"PCV\";";
@@ -145,7 +195,7 @@ public class DBProductsManager extends DBManager {
     public static Product[] getFromClientProducts(int customer, Date from, Date to) throws SQLException {
         Date sqlFrom = new java.sql.Date(from.getTime());
         Date sqlTo = new java.sql.Date(to.getTime());
-        String query = "SELECT p.* FROM Products p, Movements m WHERE "
+        String query = "SELECT p.* FROM products p, movements m WHERE "
                 + "p.code = m.product AND "
                 + "p.customer = " + customer + " AND "
                 + "m.causal = \"PCV\" AND "
@@ -160,14 +210,14 @@ public class DBProductsManager extends DBManager {
     public static Product[] getFromClientProductsBack(int customer, Date from, Date to) throws SQLException {
         Date sqlFrom = new java.sql.Date(from.getTime());
         Date sqlTo = new java.sql.Date(to.getTime());
-        String query = "SELECT p.* FROM DeliveryDocuments d, Products p, Movements m WHERE "
+        String query = "SELECT p.* FROM deliverydocuments d, products p, movements m WHERE "
                 + "p.code = m.product AND "
                 + "p.deliveryDocument = d.code AND "
                 + "d.customer = " + customer + " AND "
                 + "m.causal = \"PCV\" AND "
                 + "m.operationDate >= '" + sqlFrom + "' AND "
                 + "m.operationDate <= '" + sqlTo + "' AND "
-                + "EXISTS (SELECT * FROM Movements WHERE causal = \"RES\" AND product = p.code);";
+                + "EXISTS (SELECT * FROM movements WHERE causal = \"RES\" AND product = p.code);";
         dbConnect();
         Product[] products = parseProductsResultSet(dbSelect(query));
         dbDisconnect();
@@ -175,12 +225,12 @@ public class DBProductsManager extends DBManager {
     }
 
     public static Product[] getFromClientProductsBack(int customer) throws SQLException {
-        String query = "SELECT p.* FROM DeliveryDocuments d, Products p, Movements m WHERE "
+        String query = "SELECT p.* FROM deliverydocuments d, products p, movements m WHERE "
                 + "p.code = m.product AND "
                 + "p.deliveryDocument = d.code AND "
                 + "d.customer = " + customer + " AND "
                 + "m.causal = \"PCV\" AND "
-                + "EXISTS (SELECT * FROM Movements WHERE causal = \"RES\" AND product = p.code);";
+                + "EXISTS (SELECT * FROM movements WHERE causal = \"RES\" AND product = p.code);";
         dbConnect();
         Product[] products = parseProductsResultSet(dbSelect(query));
         dbDisconnect();
@@ -190,14 +240,14 @@ public class DBProductsManager extends DBManager {
     public static Product[] getFromClientProductsSold(int customer, Date from, Date to) throws SQLException {
         Date sqlFrom = new java.sql.Date(from.getTime());
         Date sqlTo = new java.sql.Date(to.getTime());
-        String query = "SELECT p.* FROM DeliveryDocuments d, Products p, Movements m WHERE "
+        String query = "SELECT p.* FROM deliverydocuments d, products p, movements m WHERE "
                 + "p.code = m.product AND "
                 + "p.deliveryDocument = d.code AND "
                 + "d.customer = " + customer + " AND "
                 + "m.causal = \"PCV\" AND "
                 + "m.operationDate >= '" + sqlFrom + "' AND "
                 + "m.operationDate <= '" + sqlTo + "' AND "
-                + "EXISTS (SELECT * FROM Movements WHERE causal = \"CPM\" AND product = p.code);";
+                + "EXISTS (SELECT * FROM movements WHERE causal = \"CPM\" AND product = p.code);";
         dbConnect();
         Product[] products = parseProductsResultSet(dbSelect(query));
         dbDisconnect();
@@ -205,12 +255,12 @@ public class DBProductsManager extends DBManager {
     }
 
     public static Product[] getFromClientProductsSold(int customer) throws SQLException {
-        String query = "SELECT p.* FROM DeliveryDocuments d, Products p, Movements m WHERE "
+        String query = "SELECT p.* FROM deliverydocuments d, products p, movements m WHERE "
                 + "p.code = m.product AND "
                 + "p.deliveryDocument = d.code AND "
                 + "d.customer = " + customer + " AND "
                 + "m.causal = \"PCV\" AND "
-                + "EXISTS (SELECT * FROM Movements WHERE causal = \"CPM\" AND product = p.code);";
+                + "EXISTS (SELECT * FROM movements WHERE causal = \"CPM\" AND product = p.code);";
         dbConnect();
         Product[] products = parseProductsResultSet(dbSelect(query));
         dbDisconnect();
@@ -218,23 +268,24 @@ public class DBProductsManager extends DBManager {
     }
 
     public static Product[] getFromClientProductsOnSale(int customer) throws SQLException {
-        String query = "SELECT p.* FROM DeliveryDocuments d, Products p, Movements m WHERE "
+        String query = "SELECT p.* FROM deliverydocuments d, products p, movements m WHERE "
                 + "p.code = m.product AND "
                 + "p.deliveryDocument = d.code AND "
                 + "d.customer = " + customer + " AND "
                 + "m.causal = \"PCV\" AND "
-                + "NOT EXISTS (SELECT * FROM Movements WHERE causal = \"CPM\" AND product = p.code) AND "
-                + "NOT EXISTS (SELECT * FROM Movements WHERE causal = \"RES\" AND product = p.code);";
+                + "NOT EXISTS (SELECT * FROM movements WHERE causal = \"CPM\" AND product = p.code) AND "
+                + "NOT EXISTS (SELECT * FROM movements WHERE causal = \"RES\" AND product = p.code);";
         dbConnect();
         Product[] products = parseProductsResultSet(dbSelect(query));
         dbDisconnect();
         return products;
     }
 
-    public static Product[] getOnSaleProducts() throws SQLException {
-        String query = "SELECT * FROM Products p WHERE "
-                + "NOT EXISTS (SELECT * FROM Movements m WHERE m.product = p.code AND "
-                + "(m.causal = \"RES\" OR m.causal = \"CPM\"));";
+    public static Product[] getOnSaleProducts(int page) throws SQLException {
+        String query = "SELECT * FROM products p WHERE "
+                + "NOT EXISTS (SELECT * FROM movements m WHERE m.product = p.code AND "
+                + "(m.causal = \"RES\" OR m.causal = \"CPM\")) "
+                + "LIMIT " + MAX_RESULTS + " OFFSET " + page * MAX_RESULTS + ";";
         dbConnect();
         Product[] products = parseProductsResultSet(dbSelect(query));
         dbDisconnect();
@@ -244,7 +295,7 @@ public class DBProductsManager extends DBManager {
     public static Product[] getReturnedProducts(Date from, Date to) throws SQLException {
         Date sqlFrom = new java.sql.Date(from.getTime());
         Date sqlTo = new java.sql.Date(to.getTime());
-        String query = "SELECT p.* FROM Products p, Movements m WHERE "
+        String query = "SELECT p.* FROM products p, movements m WHERE "
                 + "p.code = m.product AND "
                 + "m.causal = \"RES\" AND "
                 + "m.operationDate >= '" + sqlFrom + "' AND "
@@ -256,7 +307,7 @@ public class DBProductsManager extends DBManager {
     }
 
     public static boolean addProduct(Product p) throws SQLException {
-        String query = "INSERT INTO Products(name,description,qta,price,commission,deliverydocument)"
+        String query = "INSERT INTO products(name,description,qta,price,commission,deliverydocument)"
                 + "VALUES(?,?,?,?,?,?)";
 
         dbConnect();
@@ -274,7 +325,7 @@ public class DBProductsManager extends DBManager {
     }
 
     public static boolean setInvoice(Product p, Invoice i) throws SQLException {
-        StringBuilder query = new StringBuilder("UPDATE Products SET ");
+        StringBuilder query = new StringBuilder("UPDATE products SET ");
         query.append("invoice=? ");
         query.append("WHERE code = ?");
         dbConnect();
@@ -292,7 +343,7 @@ public class DBProductsManager extends DBManager {
     }
 
     public static boolean setDeliveryDocument(Product p, int document) throws SQLException {
-        StringBuilder query = new StringBuilder("UPDATE Products SET ");
+        StringBuilder query = new StringBuilder("UPDATE products SET ");
         query.append("deliveryDocument=? ");
         query.append("WHERE code = ?");
         dbConnect();
@@ -310,7 +361,7 @@ public class DBProductsManager extends DBManager {
     }
 
     public static boolean editProduct(Product p) throws SQLException {
-        StringBuilder query = new StringBuilder("UPDATE Products SET ");
+        StringBuilder query = new StringBuilder("UPDATE products SET ");
         query.append("name=?,");
         query.append("description=?,");
         query.append("qta=?,");
@@ -331,7 +382,7 @@ public class DBProductsManager extends DBManager {
     }
 
     public static boolean removeProduct(Product p) throws SQLException {
-        String query = "DELETE FROM Products WHERE code = " + p.getCode();
+        String query = "DELETE FROM products WHERE code = " + p.getCode();
         dbConnect();
         boolean res = dbUpdate(query);
         dbDisconnect();
@@ -339,7 +390,7 @@ public class DBProductsManager extends DBManager {
     }
 
     public static Product getProduct(int code) throws SQLException {
-        String query = "SELECT * FROM Products WHERE code = " + code;
+        String query = "SELECT * FROM products WHERE code = " + code;
         dbConnect();
         Product[] products = parseProductsResultSet(dbSelect(query));
         dbDisconnect();

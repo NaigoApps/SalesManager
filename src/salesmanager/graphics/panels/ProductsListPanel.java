@@ -8,8 +8,12 @@ package salesmanager.graphics.panels;
 import java.awt.print.PageFormat;
 import java.awt.print.PrinterException;
 import java.awt.print.PrinterJob;
+import java.beans.PropertyChangeEvent;
+import java.beans.PropertyChangeListener;
 import java.sql.SQLException;
 import java.util.Date;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import javax.swing.JOptionPane;
 import salesmanager.beans.Customer;
 import salesmanager.beans.Invoice;
@@ -31,7 +35,7 @@ import salesmanager.printable.ProductLabelForm;
  *
  * @author Lorenzo
  */
-public class ProductsListPanel extends javax.swing.JPanel implements Loadable {
+public class ProductsListPanel extends javax.swing.JPanel implements Loadable, PropertyChangeListener {
 
     /**
      * Creates new form OnSaleProductsListPanel
@@ -45,24 +49,33 @@ public class ProductsListPanel extends javax.swing.JPanel implements Loadable {
 
     public ProductsListPanel(Main parent) {
         initComponents();
+        try {
+            pnNavigation.setPages((DBProductsManager.countOnSaleProducts() + DBProductsManager.MAX_RESULTS - 1) / DBProductsManager.MAX_RESULTS);
+        } catch (SQLException ex) {
+            pnNavigation.setPages(0);
+            JOptionPane.showMessageDialog(this, ex.getMessage(), "Errore di caricamento", JOptionPane.ERROR_MESSAGE);
+        }
+        pnNavigation.addPropertyChangeListener("page", this);
         this.parent = parent;
         this.customer = null;
-        modelOnSale = new ProductsModel(){
+        modelOnSale = new ProductsModel() {
             @Override
             public Class<?> getColumnClass(int columnIndex) {
-                if(getRowCount() > 0 && columnIndex >= 0 && columnIndex < getColumnCount()){
-                    return getValueAt(columnIndex, 0).getClass();
+                if (getRowCount() > 0 && columnIndex >= 0 && columnIndex < getColumnCount()) {
+                    if (getValueAt(columnIndex, 0) != null) {
+                        return getValueAt(columnIndex, 0).getClass();
+                    }
                 }
                 return Object.class;
             }
         };
         tableOnSale.setModel(modelOnSale);
         tableOnSale.setAutoCreateRowSorter(true);
-        modelSold = new ProductsModel(){
+        modelSold = new ProductsModel() {
             @Override
             public Class<?> getColumnClass(int columnIndex) {
-                if(getRowCount() > 0 && columnIndex >= 0 && columnIndex < getColumnCount()){
-                    if(getValueAt(columnIndex, 0) != null){
+                if (getRowCount() > 0 && columnIndex >= 0 && columnIndex < getColumnCount()) {
+                    if (getValueAt(columnIndex, 0) != null) {
                         return getValueAt(columnIndex, 0).getClass();
                     }
                 }
@@ -71,11 +84,13 @@ public class ProductsListPanel extends javax.swing.JPanel implements Loadable {
         };
         tableSold.setModel(modelSold);
         tableSold.setAutoCreateRowSorter(true);
-        modelBack = new ProductsModel(){
+        modelBack = new ProductsModel() {
             @Override
             public Class<?> getColumnClass(int columnIndex) {
-                if(getRowCount() > 0 && columnIndex >= 0 && columnIndex < getColumnCount() && getValueAt(columnIndex, 0) != null){
-                    return getValueAt(columnIndex, 0).getClass();
+                if (getRowCount() > 0 && columnIndex >= 0 && columnIndex < getColumnCount()) {
+                    if (getValueAt(columnIndex, 0) != null) {
+                        return getValueAt(columnIndex, 0).getClass();
+                    }
                 }
                 return Object.class;
             }
@@ -83,7 +98,6 @@ public class ProductsListPanel extends javax.swing.JPanel implements Loadable {
         tableBack.setModel(modelBack);
         tableBack.setAutoCreateRowSorter(true);
 
-        
         txtA.setValue(Main.today());
         txtDa.setValue(Main.lastMonth());
     }
@@ -113,6 +127,7 @@ public class ProductsListPanel extends javax.swing.JPanel implements Loadable {
         btnDelete = new javax.swing.JButton();
         btnMovements = new javax.swing.JButton();
         btnPrintLabel = new javax.swing.JButton();
+        pnNavigation = new salesmanager.components.NavigatorPanel();
         pnSold = new javax.swing.JPanel();
         jScrollPane2 = new javax.swing.JScrollPane();
         tableSold = new javax.swing.JTable();
@@ -196,6 +211,7 @@ public class ProductsListPanel extends javax.swing.JPanel implements Loadable {
         jPanel1.add(btnPrintLabel);
 
         pnOnSale.add(jPanel1, java.awt.BorderLayout.EAST);
+        pnOnSale.add(pnNavigation, java.awt.BorderLayout.PAGE_END);
 
         jTabbedPane1.addTab("In vendita", pnOnSale);
 
@@ -334,9 +350,19 @@ public class ProductsListPanel extends javax.swing.JPanel implements Loadable {
                         dialog = new ProductDialog(parent);
                         dialog.setProduct(modelOnSale.getProduct(selected));
                         dialog.setVisible(true);
-                        modelOnSale.loadOnSaleProducts();
-                        modelSold.loadSoldProducts(Main.lastMonth(), Main.today());
-                        modelBack.loadReturnedProducts(Main.lastMonth(), Main.today());
+                        if (customer != null) {
+                            modelOnSale.loadCustomersOnSaleProducts(customer.getCode());
+                            modelSold.loadCustomersSoldProducts(customer.getCode());
+                            modelBack.loadCustomersReturnedProducts(customer.getCode());
+                        } else if (txtDa.getValue() != null && txtA.getValue() != null) {
+                            modelOnSale.loadOnSaleProducts(pnNavigation.getCurrentPage());
+                            modelSold.loadSoldProducts((Date) txtDa.getValue(), (Date) txtA.getValue());
+                            modelBack.loadReturnedProducts((Date) txtDa.getValue(), (Date) txtA.getValue());
+                        } else {
+                            modelOnSale.loadOnSaleProducts(pnNavigation.getCurrentPage());
+                            modelSold.loadSoldProducts(Main.lastMonth(), Main.today());
+                            modelBack.loadReturnedProducts(Main.lastMonth(), Main.today());
+                        }
                     } else {
                         JOptionPane.showMessageDialog(this, "Alcuni movimenti del prodotto sono già registrati", "Impossibile moidficare", JOptionPane.WARNING_MESSAGE);
                     }
@@ -367,7 +393,7 @@ public class ProductsListPanel extends javax.swing.JPanel implements Loadable {
                         int choice = JOptionPane.showConfirmDialog(this, "Sicuro di voler eliminare " + modelOnSale.getProduct(selected) + "?", "Attenzione", JOptionPane.YES_NO_OPTION);
                         if (choice == JOptionPane.YES_OPTION) {
                             DBProductsManager.removeProduct(modelOnSale.getProduct(selected));
-                            modelOnSale.loadOnSaleProducts();
+                            modelOnSale.loadOnSaleProducts(pnNavigation.getCurrentPage());
                         }
                     } else {
                         JOptionPane.showMessageDialog(this, "Alcuni movimenti del prodotto sono già registrati", "Impossibile eliminare", JOptionPane.WARNING_MESSAGE);
@@ -498,7 +524,7 @@ public class ProductsListPanel extends javax.swing.JPanel implements Loadable {
                                 toSell.getCommission(),
                                 -toSell.getPrice()
                         ));
-                        modelOnSale.loadOnSaleProducts();
+                        modelOnSale.loadOnSaleProducts(pnNavigation.getCurrentPage());
                         modelSold.loadSoldProducts(Main.lastMonth(), Main.today());
                     } catch (SQLException ex) {
                         JOptionPane.showMessageDialog(null, "Errore durante l'operazione");
@@ -537,7 +563,7 @@ public class ProductsListPanel extends javax.swing.JPanel implements Loadable {
                                 toReturn.getCommission(),
                                 -toReturn.getPrice()
                         ));
-                        modelOnSale.loadOnSaleProducts();
+                        modelOnSale.loadOnSaleProducts(pnNavigation.getCurrentPage());
                         modelBack.loadSoldProducts(Main.lastMonth(), Main.today());
                     } catch (SQLException ex) {
                         JOptionPane.showMessageDialog(null, "Errore durante l'operazione");
@@ -576,6 +602,7 @@ public class ProductsListPanel extends javax.swing.JPanel implements Loadable {
     private javax.swing.JScrollPane jScrollPane3;
     private javax.swing.JTabbedPane jTabbedPane1;
     private javax.swing.JPanel pnBack;
+    private salesmanager.components.NavigatorPanel pnNavigation;
     private javax.swing.JPanel pnNorth;
     private javax.swing.JPanel pnOnSale;
     private javax.swing.JPanel pnSold;
@@ -588,14 +615,33 @@ public class ProductsListPanel extends javax.swing.JPanel implements Loadable {
 
     @Override
     public void load() throws SQLException {
+        loadOnSale();
         if (customer != null) {
-            modelOnSale.loadCustomersOnSaleProducts(customer.getCode());
             modelSold.loadCustomersSoldProducts(customer.getCode(), null, null);
             modelBack.loadCustomersReturnedProducts(customer.getCode(), null, null);
         } else {
-            modelOnSale.loadOnSaleProducts();
             modelSold.loadSoldProducts((Date) txtDa.getValue(), (Date) txtA.getValue());
             modelBack.loadReturnedProducts((Date) txtDa.getValue(), (Date) txtA.getValue());
+        }
+    }
+
+    private void loadOnSale() throws SQLException{
+        if (customer != null) {
+            modelOnSale.loadCustomersOnSaleProducts(customer.getCode());
+        } else {
+            modelOnSale.loadOnSaleProducts(pnNavigation.getCurrentPage());
+        }
+    }
+    
+    @Override
+    public void propertyChange(PropertyChangeEvent evt) {
+        if ("page".equals(evt.getPropertyName())) {
+            try {
+                loadOnSale();
+                modelOnSale.fireTableDataChanged();
+            } catch (SQLException ex) {
+                JOptionPane.showMessageDialog(this, ex.getMessage(), "Errore di caricamento", JOptionPane.ERROR_MESSAGE);
+            }
         }
     }
 }

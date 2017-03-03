@@ -42,7 +42,7 @@ public class InvoiceDetailsDialog extends javax.swing.JDialog {
             JOptionPane.showMessageDialog(this, ex, "Impossibile trovare il cliente", JOptionPane.ERROR_MESSAGE);
         }
         try {
-            Product[] products = DBProductsManager.getFromInvoiceProducts(inv.getCode());
+            Product[] products = DBProductsManager.getInvoiceProducts(inv.getCode());
             lstProducts.setModel(new DefaultComboBoxModel(products));
         } catch (SQLException ex) {
             JOptionPane.showMessageDialog(this, ex, "Impossibile caricare i prodotti", JOptionPane.ERROR_MESSAGE);

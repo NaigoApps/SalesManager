@@ -61,7 +61,7 @@ create table Movements(
     price FLOAT(7,2),
     commission INT(3),
     FOREIGN KEY (product) REFERENCES Products(code) ON DELETE CASCADE
-)
+);
 
 create table Registers(
     code INT(10) AUTO_INCREMENT PRIMARY KEY,

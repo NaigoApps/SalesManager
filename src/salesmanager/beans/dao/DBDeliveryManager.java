@@ -57,10 +57,10 @@ public class DBDeliveryManager extends DBManager{
     }
 
     public static DeliveryDocument getLastClosedDeliveryDocument() throws SQLException{
-        String query = "SELECT * FROM DeliveryDocuments d WHERE "
+        String query = "SELECT * FROM deliverydocuments d WHERE "
                 + "d.progressive <> -1 AND "
-                + "d.documentDate = (SELECT max(documentDate) FROM DeliveryDocuments) AND "
-                + "d.progressive = (SELECT max(progressive) FROM DeliveryDocuments WHERE documentDate = d.documentDate)";
+                + "d.documentDate = (SELECT max(documentDate) FROM deliverydocuments) AND "
+                + "d.progressive = (SELECT max(progressive) FROM deliverydocuments WHERE documentDate = d.documentDate)";
         dbConnect();
         DeliveryDocument[] documents = parseDeliveryDocumentsResultSet(dbSelect(query));
         dbDisconnect();
@@ -73,7 +73,7 @@ public class DBDeliveryManager extends DBManager{
     public static DeliveryDocument[] getDeliveryDocuments(Date from, Date to) throws SQLException {
         Date sqlFrom = new java.sql.Date(from.getTime());
         Date sqlTo = new java.sql.Date(to.getTime());
-        String query = "SELECT * FROM DeliveryDocuments WHERE "
+        String query = "SELECT * FROM deliverydocuments WHERE "
                 + "documentDate >= '" + sqlFrom + "' AND "
                 + "documentDate <= '" + sqlTo + "';";
         dbConnect();
@@ -83,7 +83,7 @@ public class DBDeliveryManager extends DBManager{
     }
     
     public static DeliveryDocument getProductDeliveryDocument(Product p) throws SQLException {
-        String query = "SELECT * FROM DeliveryDocuments WHERE "
+        String query = "SELECT * FROM deliverydocuments WHERE "
                 + "code = " + p.getDeliveryDocument() + ";";
         dbConnect();
         DeliveryDocument[] documents = parseDeliveryDocumentsResultSet(dbSelect(query));
@@ -95,7 +95,7 @@ public class DBDeliveryManager extends DBManager{
     }
 
     public static int getNextDeliveryDocument(int year) throws SQLException{
-        String query = "SELECT max(progressive)+1 FROM DeliveryDocuments WHERE year(documentDate) = " + year;
+        String query = "SELECT max(progressive)+1 FROM deliverydocuments WHERE year(documentDate) = " + year;
         dbConnect();
         int val = 1;
         if(DBManager.parseValueResultSet(dbSelect(query)) != null){
@@ -106,7 +106,7 @@ public class DBDeliveryManager extends DBManager{
     }
     
     public static boolean addDeliveryDocument(DeliveryDocument i) throws SQLException {
-        String query = "INSERT INTO DeliveryDocuments(progressive,documentDate,customer) "
+        String query = "INSERT INTO deliverydocuments(progressive,documentDate,customer) "
                 + "VALUES(?,?,?)";
         Calendar c = new GregorianCalendar();
         c.setTime(i.getDocumentDate());
@@ -126,7 +126,7 @@ public class DBDeliveryManager extends DBManager{
     }
     
     public static boolean editDeliveryDocument(DeliveryDocument i) throws SQLException {
-        String query = "UPDATE DeliveryDocuments SET "
+        String query = "UPDATE deliverydocuments SET "
                 + "customer = ?,"
                 + "documentDate = ? "
                 + "WHERE code = ?";
@@ -143,7 +143,7 @@ public class DBDeliveryManager extends DBManager{
     
 
     public static boolean removeDeliveryDocument(DeliveryDocument d) throws SQLException {
-        String query = "DELETE FROM DeliveryDocuments WHERE code = " + d.getCode();
+        String query = "DELETE FROM deliverydocuments WHERE code = " + d.getCode();
         dbConnect();
         boolean res = dbUpdate(query);
         dbDisconnect();

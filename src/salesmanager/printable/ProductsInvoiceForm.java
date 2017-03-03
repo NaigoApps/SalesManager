@@ -83,34 +83,34 @@ public class ProductsInvoiceForm extends DefaultForm {
          }*/
         double top = getLine();
 
-        g.setFont(new Font("Arial", Font.BOLD, 10));
-        FormTable ft = new FormTable(new double[]{100}, new double[]{10, 15, 35, 25, 15}, new Rectangle(getLeft(pf), top, getRight(pf) - getLeft(pf), pts(8)));
+        g.setFont(new Font("Arial", Font.BOLD, 9));
+        FormTable ft = new FormTable(new double[]{100}, new double[]{5, 8, 22, 15, 15, 25, 10}, new Rectangle(getLeft(pf), top, getRight(pf) - getLeft(pf), pts(8)));
         ft.drawCenteredString("Q.tà", 0, 0, g);
-        ft.drawCenteredString("Documento", 0, 1, g);
+        ft.drawCenteredString("Doc", 0, 1, g);
         ft.drawCenteredString("Descrizione", 0, 2, g);
-        ft.drawCenteredString("Totale pattuito compr. IVA", 0, 3, g);
-        ft.drawCenteredString("Provvigione", 0, 4, g);
-        g.setFont(new Font("Arial", Font.PLAIN, 9));
+        ft.drawCenteredString("Data di entrata", 0, 3, g);
+        ft.drawCenteredString("Data di vendita", 0, 4, g);
+        ft.drawCenteredString("Totale pattuito compr. IVA", 0, 5, g);
+        ft.drawCenteredString("Provv.", 0, 6, g);
+        g.setFont(new Font("Arial", Font.PLAIN, 8));
         top += pts(8);
         Product[] products = null;
         try {
-            products = DBProductsManager.getFromInvoiceProducts(invoice.getCode());
+            products = DBProductsManager.getInvoiceProducts(invoice.getCode());
         } catch (SQLException ex) {
             products = new Product[0];
         }
         float tot = 0, realTot = 0;
-        ft = new FormTable(Invoice.MAX_PRODUCTS, new double[]{10, 15, 35, 25, 15}, new Rectangle(getLeft(pf), top, getRight(pf) - getLeft(pf), Invoice.MAX_PRODUCTS * pts(8)));
+        ft = new FormTable(Invoice.MAX_PRODUCTS, new double[]{5, 8, 22, 15, 15, 25, 10}, new Rectangle(getLeft(pf), top, getRight(pf) - getLeft(pf), Invoice.MAX_PRODUCTS * pts(6)));
         for (int i = 0; i < Invoice.MAX_PRODUCTS; i++) {
             if (i < products.length) {
                 printProduct(ft, products[i], i, g);
                 tot += products[i].getPrice() * products[i].getCommission() / 100;
                 realTot += products[i].getPrice();
             }
-            top += pts(8);
+            top += pts(6);
         }
         ft.paint(g);
-
-        ft = new FormTable(new double[]{100}, new double[]{80, 20}, new Rectangle(getLeft(pf), top + pts(4), getRight(pf) - getLeft(pf), pts(8)));
 
         if (realTot - tot >= 77.47) {
             ft = new FormTable(new double[]{50, 50}, new double[]{90, 10}, new Rectangle(getLeft(pf), top + pts(4), getRight(pf) - getLeft(pf), 2 * pts(8)));
@@ -160,29 +160,31 @@ public class ProductsInvoiceForm extends DefaultForm {
          }*/
         double top = getLine();
 
-        g.setFont(new Font("Arial", Font.BOLD, 10));
-        FormTable ft = new FormTable(new double[]{100}, new double[]{10, 15, 35, 25, 15}, new Rectangle(getLeft(pf), top, getRight(pf) - getLeft(pf), pts(8)));
+        g.setFont(new Font("Arial", Font.BOLD, 9));
+        FormTable ft = new FormTable(new double[]{100}, new double[]{5, 8, 22, 15, 15, 25, 10}, new Rectangle(getLeft(pf), top, getRight(pf) - getLeft(pf), pts(8)));
         ft.drawCenteredString("Q.tà", 0, 0, g);
-        ft.drawCenteredString("Documento", 0, 1, g);
+        ft.drawCenteredString("Doc.", 0, 1, g);
         ft.drawCenteredString("Descrizione", 0, 2, g);
-        ft.drawCenteredString("Totale pattuito compr. IVA", 0, 3, g);
-        ft.drawCenteredString("Provvigione", 0, 4, g);
-        g.setFont(new Font("Arial", Font.PLAIN, 9));
+        ft.drawCenteredString("Data di entrata", 0, 3, g);
+        ft.drawCenteredString("Data di vendita", 0, 4, g);
+        ft.drawCenteredString("Totale pattuito compr. IVA", 0, 5, g);
+        ft.drawCenteredString("Provv.", 0, 6, g);
+        g.setFont(new Font("Arial", Font.PLAIN, 8));
         top += pts(8);
         Product[] products = null;
         try {
-            products = DBProductsManager.getFromInvoiceProducts(invoice.getCode());
+            products = DBProductsManager.getInvoiceProducts(invoice.getCode());
         } catch (SQLException ex) {
             products = new Product[0];
         }
         float tot = 0;
-        ft = new FormTable(Invoice.MAX_PRODUCTS, new double[]{10, 15, 35, 25, 15}, new Rectangle(getLeft(pf), top, getRight(pf) - getLeft(pf), Invoice.MAX_PRODUCTS * pts(8)));
+        ft = new FormTable(Invoice.MAX_PRODUCTS, new double[]{5, 8, 22, 15, 15, 25, 10}, new Rectangle(getLeft(pf), top, getRight(pf) - getLeft(pf), Invoice.MAX_PRODUCTS * pts(6)));
         for (int i = 0; i < Invoice.MAX_PRODUCTS; i++) {
             if (i < products.length) {
                 printProduct(ft, products[i], i, g);
                 tot += products[i].getPrice() * products[i].getCommission() / 100;
             }
-            top += pts(8);
+            top += pts(6);
         }
         ft.paint(g);
 
@@ -219,23 +221,39 @@ public class ProductsInvoiceForm extends DefaultForm {
         ft.drawString("Sede: Viale Europa 154 - 51039 Quarrata - PT", 3, 0, g);
         ft.drawString("CF: KHLMMD70D17Z352A", 4, 0, g);
         ft.drawString("P.IVA: 01884290477", 5, 0, g);
-        ft.drawString("Spett.le", 5, 2, g);
-        ft.drawString(customer.getSurname() + " " + customer.getName() + " (COD " + String.format("%03d", customer.getCode()) + ")", 6, 2, g);
-        ft.drawString(customer.getAddress(), 7, 2, g);
-        if (customer.getCAP() != null && customer.getCity() != null && customer.getDistrict() != null) {
-            ft.drawString(customer.getCAP() + " " + customer.getCity() + " " + customer.getDistrict(), 8, 2, g);
-        } else {
-            ft.drawString("Provincia:", 8, 2, g);
+        
+        int rowIndex = 5;
+        ft.drawString("Spett.le", rowIndex++, 2, g);
+        ft.drawString(customer.getSurname() + " " + customer.getName() + " (COD " + String.format("%03d", customer.getCode()) + ")", rowIndex++, 2, g);
+        if (customer.getAddress() != null && !customer.getAddress().trim().isEmpty()) {
+            ft.drawString(customer.getAddress(), rowIndex++, 2, g);
         }
-        ft.drawString("CF: " + customer.getCf().toUpperCase(), 9, 2, g);
+        if (customer.getCAP() != null && customer.getCity() != null && customer.getDistrict() != null &&
+                !customer.getCAP().trim().isEmpty() && !customer.getCity().trim().isEmpty() && !customer.getDistrict().trim().isEmpty()) {
+            ft.drawString(customer.getCAP() + " " + customer.getCity() + " " + customer.getDistrict(), rowIndex++, 2, g);
+        } 
+        if(customer.getCf() != null && !customer.getCf().trim().isEmpty()){
+            ft.drawString("CF: " + customer.getCf().toUpperCase(), rowIndex++, 2, g);
+        }
     }
 
     private void printProduct(FormTable f, Product product, int i, Graphics g) {
+        SimpleDateFormat sdf = new SimpleDateFormat("dd/MM/yyy");
         f.drawCenteredString(product.getQta() + "", i, 0, g);
         f.drawCenteredString(String.format("%05d", product.getDeliveryDocument()), i, 1, g);
         f.drawCenteredString(product.getName(), i, 2, g);
-        f.drawCenteredString(String.format("%5.2f€", product.getPrice()), i, 3, g);
-        f.drawCenteredString(product.getCommission() + "%", i, 4, g);
+        try {
+            f.drawCenteredString(sdf.format(DBProductsManager.getProductArrivalMovement(product).getOperationDate()), i, 3, g);
+        } catch (SQLException ex) {
+            f.drawCenteredString("Errore", i, 3, g);
+        }
+        try {
+            f.drawCenteredString(sdf.format(DBProductsManager.getProductSoldMovement(product).getOperationDate()), i, 4, g);
+        } catch (SQLException ex) {
+            f.drawCenteredString("Errore", i, 4, g);
+        }
+        f.drawCenteredString(String.format("%5.2f€", product.getPrice()), i, 5, g);
+        f.drawCenteredString(product.getCommission() + "%", i, 6, g);
     }
 
 }

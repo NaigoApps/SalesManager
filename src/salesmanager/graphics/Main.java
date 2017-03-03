@@ -11,6 +11,7 @@ import salesmanager.graphics.panels.CustomersListPanel;
 import java.awt.print.PrinterException;
 import java.awt.print.PrinterJob;
 import java.sql.SQLException;
+import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Date;
 import java.util.GregorianCalendar;
@@ -26,19 +27,14 @@ import javax.swing.JPanel;
 import salesmanager.beans.Movement;
 import salesmanager.beans.dao.DBProductsManager;
 import salesmanager.beans.Product;
-import salesmanager.beans.Register;
-import salesmanager.beans.RegisterMovement;
 import salesmanager.beans.dao.DBMovementsManager;
-import salesmanager.beans.dao.DBRegisterManager;
 import salesmanager.components.datepicker.DatePickerDialog;
 import salesmanager.graphics.dialogs.ProductDialog;
-import salesmanager.graphics.dialogs.RegisterChooserDialog;
 import salesmanager.graphics.panels.DeliveryDocumentsPanel;
 import salesmanager.graphics.panels.HomePanel;
 import salesmanager.graphics.panels.InvoicesListPanel;
 import salesmanager.graphics.panels.MovementsPanel;
 import salesmanager.graphics.panels.ProductsListPanel;
-import salesmanager.printable.MovementsForm;
 import salesmanager.printable.MovementsSummaryForm;
 import salesmanager.printable.MultiDeliveryForm;
 
@@ -109,8 +105,16 @@ public class Main extends JFrame {
                 public void run() {
                     try {
                         LoadingFrame.makeLoadingFrame();
-                        DBProductsManager.updateProducts();
+                        ArrayList<String> errors = new ArrayList<>();
+                        DBProductsManager.updateProducts(errors);
                         LoadingFrame.destroyLoadingFrame();
+                        StringBuilder codes = new StringBuilder();
+                        for (String error : errors) {
+                            codes.append(error).append("\n");
+                        }
+                        if (errors.size() > 0) {
+                            JOptionPane.showMessageDialog(null, "Prodotti con errore: " + codes.toString(), "Errore durante l'aggiornamento dei prezzi", JOptionPane.ERROR_MESSAGE);
+                        }
                     } catch (Exception ex) {
                         LoadingFrame.destroyLoadingFrame();
                         JOptionPane.showMessageDialog(null, ex, "Errore durante l'aggiornamento dei prezzi", JOptionPane.ERROR_MESSAGE);
@@ -296,6 +300,7 @@ public class Main extends JFrame {
 
     private void mnMovementsActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_mnMovementsActionPerformed
         try {
+            movementsPanel.setProduct(null);
             showPanel(MOVEMENTS);
         } catch (SQLException ex) {
             JOptionPane.showMessageDialog(this, ex, "Impossibile caricare i movimenti", JOptionPane.ERROR_MESSAGE);

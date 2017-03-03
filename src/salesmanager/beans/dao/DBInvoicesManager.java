@@ -22,7 +22,7 @@ import salesmanager.graphics.Main;
  * @author Lorenzo
  */
 public class DBInvoicesManager extends DBManager {
-
+    
     private static Invoice resultSetToInvoice(ResultSet rs) throws SQLException {
         return BeansUtil.copyOf(rs, new Invoice());
     }
@@ -36,7 +36,7 @@ public class DBInvoicesManager extends DBManager {
     }
 
     public static boolean removeInvoice(Invoice inv) throws SQLException {
-        String query = "DELETE FROM Invoices WHERE code = " + inv.getCode();
+        String query = "DELETE FROM invoices WHERE code = " + inv.getCode();
         dbConnect();
         boolean res = dbUpdate(query);
         dbDisconnect();
@@ -44,10 +44,10 @@ public class DBInvoicesManager extends DBManager {
     }
     
     public static Invoice getLastClosedInvoice() throws SQLException{
-        String query = "SELECT * FROM Invoices i WHERE "
+        String query = "SELECT * FROM invoices i WHERE "
                 + "i.progressive <> -1 AND "
-                + "i.invoiceDate = (SELECT max(invoiceDate) FROM Invoices) AND "
-                + "i.progressive = (SELECT max(progressive) FROM Invoices WHERE invoiceDate = i.invoiceDate)";
+                + "i.invoiceDate = (SELECT max(invoiceDate) FROM invoices) AND "
+                + "i.progressive = (SELECT max(progressive) FROM invoices WHERE invoiceDate = i.invoiceDate)";
         dbConnect();
         Invoice[] invoices = parseInvoicesResultSet(dbSelect(query));
         dbDisconnect();
@@ -58,7 +58,7 @@ public class DBInvoicesManager extends DBManager {
     }
     
     public static int getNProducts(Invoice inv) throws SQLException{
-        String query = "SELECT count(*) FROM Products p WHERE "
+        String query = "SELECT count(*) FROM products p WHERE "
                 + "p.invoice = " + inv.getCode();
         dbConnect();
         int n = parseValueResultSet(dbSelect(query)).intValue();
@@ -83,7 +83,7 @@ public class DBInvoicesManager extends DBManager {
     public static Invoice[] getInvoices(Date from, Date to) throws SQLException {
         Date sqlFrom = new java.sql.Date(from.getTime());
         Date sqlTo = new java.sql.Date(to.getTime());
-        String query = "SELECT * FROM Invoices WHERE "
+        String query = "SELECT * FROM invoices WHERE "
                 + "invoiceDate >= '" + sqlFrom + "' AND "
                 + "invoiceDate <= '" + sqlTo + "' "
                 + "ORDER BY invoiceDate, progressive;";
@@ -94,7 +94,7 @@ public class DBInvoicesManager extends DBManager {
     }
 
     public static Invoice[] getOpenInvoices() throws SQLException {
-        String query = "SELECT * FROM Invoices WHERE progressive IS NULL;";
+        String query = "SELECT * FROM invoices WHERE progressive IS NULL;";
         dbConnect();
         Invoice[] invoices = parseInvoicesResultSet(dbSelect(query));
         dbDisconnect();
@@ -102,7 +102,7 @@ public class DBInvoicesManager extends DBManager {
     }
 
     public static Invoice[] getOpenInvoices(Customer c) throws SQLException {
-        String query = "SELECT * FROM Invoices WHERE "
+        String query = "SELECT * FROM invoices WHERE "
                 + "progressive IS NULL AND "
                 + "customer = " + c.getCode();
         dbConnect();
@@ -112,7 +112,7 @@ public class DBInvoicesManager extends DBManager {
     }
 
     public static Invoice getProductInvoice(Product p) throws SQLException {
-        String query = "SELECT * FROM Invoices WHERE "
+        String query = "SELECT * FROM invoices WHERE "
                 + "code = " + p.getInvoice() + ";";
         dbConnect();
         Invoice[] invoices = parseInvoicesResultSet(dbSelect(query));
@@ -124,7 +124,7 @@ public class DBInvoicesManager extends DBManager {
     }
 
     public static int getNextInvoice(int year) throws SQLException {
-        String query = "SELECT max(progressive)+1 FROM Invoices WHERE year(invoiceDate) = " + year;
+        String query = "SELECT max(progressive)+1 FROM invoices WHERE year(invoiceDate) = " + year;
         dbConnect();
         int val = 1;
         if (DBManager.parseValueResultSet(dbSelect(query)) != null) {
@@ -135,7 +135,7 @@ public class DBInvoicesManager extends DBManager {
     }
 
     public static boolean addInvoice(Invoice i) throws SQLException {
-        String query = "INSERT INTO Invoices(customer,invoiceDate) "
+        String query = "INSERT INTO invoices(customer,invoiceDate) "
                 + "VALUES(?,?)";
 
         dbConnect();
@@ -148,7 +148,7 @@ public class DBInvoicesManager extends DBManager {
     }
 
     public static boolean editInvoice(Invoice i) throws SQLException {
-        String query = "UPDATE Invoices SET "
+        String query = "UPDATE invoices SET "
                 + "customer = ?,"
                 + "invoiceDate = ? "
                 + "WHERE code = ?";
@@ -163,7 +163,7 @@ public class DBInvoicesManager extends DBManager {
     }
 
     public static boolean setProgressive(Invoice i) throws SQLException {
-        String query = "UPDATE Invoices SET "
+        String query = "UPDATE invoices SET "
                 + "progressive = ? ,"
                 + "invoiceDate = ? "
                 + "WHERE code = ?";

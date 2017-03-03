@@ -46,8 +46,8 @@ public class ProductsModel extends AbstractTableModel {
         return titles[column];
     }
 
-    public void loadOnSaleProducts() throws SQLException {
-        products = DBProductsManager.getOnSaleProducts();
+    public void loadOnSaleProducts(int page) throws SQLException {
+        products = DBProductsManager.getOnSaleProducts(page);
         fireTableDataChanged();
     }
 
@@ -59,9 +59,9 @@ public class ProductsModel extends AbstractTableModel {
     }
 
     public void loadReturnedProducts(Date from, Date to) throws SQLException {
-        if(from != null && to != null){
+        if (from != null && to != null) {
             products = DBProductsManager.getReturnedProducts(from, to);
-        }else{
+        } else {
             products = DBProductsManager.getReturnedProducts(Main.lastMonth(), Main.today());
         }
         fireTableDataChanged();
@@ -93,7 +93,15 @@ public class ProductsModel extends AbstractTableModel {
             products = DBProductsManager.getFromClientProductsBack(code);
         }
         fireTableDataChanged();
+    }
 
+    public void loadCustomersSoldProducts(int code) throws SQLException {
+        products = DBProductsManager.getFromClientProductsSold(code);
+        fireTableDataChanged();
+    }
+
+    public void loadCustomersReturnedProducts(int code) throws SQLException {
+        products = DBProductsManager.getFromClientProductsBack(code);
     }
 
     @Override
@@ -118,14 +126,13 @@ public class ProductsModel extends AbstractTableModel {
                 return p.getQta();
             case 5:
                 return p.getCommission() + "%";
-            case 6:
-        {
-            try {
-                return DBDeliveryManager.getProductDeliveryDocument(p).getCustomer();
-            } catch (SQLException | NullPointerException ex) {
-                return "ERRORE";
+            case 6: {
+                try {
+                    return DBDeliveryManager.getProductDeliveryDocument(p).getCustomer();
+                } catch (SQLException | NullPointerException ex) {
+                    return "ERRORE";
+                }
             }
-        }
             case 7:
                 return (p.getInvoice() == -1) ? "N/A" : p.getInvoice();
 
@@ -135,7 +142,7 @@ public class ProductsModel extends AbstractTableModel {
 
     @Override
     public final Object getValueAt(int rowIndex, int columnIndex) {
-        if(rowIndex < products.length){
+        if (rowIndex < products.length) {
             Product p = products[rowIndex];
             return getValueAt(p, columnIndex);
         }
@@ -146,7 +153,7 @@ public class ProductsModel extends AbstractTableModel {
         return products[i];
     }
 
-    public final Product[] getProducts(int[] indexes){
+    public final Product[] getProducts(int[] indexes) {
         ArrayList<Product> ps = new ArrayList<>(indexes.length);
         for (int i = 0; i < indexes.length; i++) {
             ps.add(products[indexes[i]]);

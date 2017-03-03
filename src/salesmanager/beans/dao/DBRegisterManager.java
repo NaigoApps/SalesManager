@@ -51,7 +51,7 @@ public class DBRegisterManager extends DBManager {
     
     
     public static float getBalanceUntil(RegisterMovement m) throws SQLException{
-        String query = "SELECT sum(movementLoadVar) FROM RegisterMovements WHERE movementProgressive <> -1 AND movementProgressive < " + m.getMovementProgressive();
+        String query = "SELECT sum(movementLoadVar) FROM registermovements WHERE movementProgressive <> -1 AND movementProgressive < " + m.getMovementProgressive();
         dbConnect();
         Number val = parseValueResultSet(dbSelect(query));
         dbDisconnect();
@@ -59,7 +59,7 @@ public class DBRegisterManager extends DBManager {
     }
 
     public static Register[] getRegisters() throws SQLException {
-        String query = "SELECT * FROM Registers;";
+        String query = "SELECT * FROM registers;";
         dbConnect();
         Register[] registers = parseRegistersResultSet(dbSelect(query));
         dbDisconnect();
@@ -67,7 +67,7 @@ public class DBRegisterManager extends DBManager {
     }
 
     public static Register getRegister(int month, int year) throws SQLException {
-        String query = "SELECT * FROM Registers WHERE "
+        String query = "SELECT * FROM registers WHERE "
                 + "month = " + month + " AND "
                 + "year = " + year;
         dbConnect();
@@ -80,7 +80,7 @@ public class DBRegisterManager extends DBManager {
     }
     
     public static RegisterMovement[] getRegisterMovements(Register reg) throws SQLException{
-        String query = "SELECT * FROM RegisterMovements WHERE "
+        String query = "SELECT * FROM registermovements WHERE "
                 + "registerCode = " + reg.getCode();
         dbConnect();
         RegisterMovement[] registers = parseRegisterMovementsResultSet(dbSelect(query));
@@ -89,7 +89,7 @@ public class DBRegisterManager extends DBManager {
     }
 
     public static boolean addRegister(int month, int year) throws SQLException {
-        String query = "INSERT INTO Registers(month,year) "
+        String query = "INSERT INTO registers(month,year) "
                 + "VALUES(?,?)";
 
         dbConnect();
@@ -102,7 +102,7 @@ public class DBRegisterManager extends DBManager {
     }
 
     public static boolean addRegisterMovement(RegisterMovement rm) throws SQLException {
-        String query = "INSERT INTO RegisterMovements("
+        String query = "INSERT INTO registermovements("
                 + "registerCode,"
                 + "customerCode,"
                 + "customerSurname,"
@@ -152,7 +152,7 @@ public class DBRegisterManager extends DBManager {
     
     
     public static boolean removeRegisterMovements(int register) throws SQLException {
-        String query = "DELETE FROM RegisterMovements WHERE registerCode = " + register;
+        String query = "DELETE FROM registermovements WHERE registerCode = " + register;
         dbConnect();
         boolean res = dbUpdate(query);
         dbDisconnect();
