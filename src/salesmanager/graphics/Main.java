@@ -161,6 +161,8 @@ public class Main extends JFrame {
         itmDailySummary = new javax.swing.JMenuItem();
         itmDeliveryDocument = new javax.swing.JMenuItem();
         jSeparator2 = new javax.swing.JPopupMenu.Separator();
+        jMenu2 = new javax.swing.JMenu();
+        menuAdjust = new javax.swing.JMenuItem();
 
         jMenuItem2.setText("jMenuItem2");
 
@@ -171,7 +173,6 @@ public class Main extends JFrame {
 
         jMenu1.setText("File");
 
-        itmExit.setIcon(new javax.swing.ImageIcon("D:\\NetBeans\\SalesManager\\files\\images\\close.png")); // NOI18N
         itmExit.setText("Esci");
         itmExit.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
@@ -256,6 +257,18 @@ public class Main extends JFrame {
         mnProducts.add(jSeparator2);
 
         menuBar.add(mnProducts);
+
+        jMenu2.setText("Utilità");
+
+        menuAdjust.setText("Aggiusta fatture");
+        menuAdjust.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                menuAdjustActionPerformed(evt);
+            }
+        });
+        jMenu2.add(menuAdjust);
+
+        menuBar.add(jMenu2);
 
         setJMenuBar(menuBar);
 
@@ -382,6 +395,12 @@ public class Main extends JFrame {
 
     }//GEN-LAST:event_itmDailySummaryActionPerformed
 
+    private void menuAdjustActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_menuAdjustActionPerformed
+        InvoicesAdjusterFrame frame = new InvoicesAdjusterFrame();
+        frame.setAlwaysOnTop(true);
+        frame.setVisible(true);
+    }//GEN-LAST:event_menuAdjustActionPerformed
+
     /**
      * @param args the command line arguments
      */
@@ -424,12 +443,14 @@ public class Main extends JFrame {
     private javax.swing.JMenuItem itmExit;
     private javax.swing.JMenuItem itmOnSaleProducts;
     private javax.swing.JMenu jMenu1;
+    private javax.swing.JMenu jMenu2;
     private javax.swing.JMenuItem jMenuItem2;
     private javax.swing.JPopupMenu.Separator jSeparator1;
     private javax.swing.JPopupMenu.Separator jSeparator2;
     private javax.swing.JSeparator jSeparator3;
     private javax.swing.JPopupMenu.Separator jSeparator4;
     private javax.swing.JPanel mainPanel;
+    private javax.swing.JMenuItem menuAdjust;
     private javax.swing.JMenuBar menuBar;
     private javax.swing.JMenu mnCustomers;
     private javax.swing.JMenuItem mnDeliveryDocuments;

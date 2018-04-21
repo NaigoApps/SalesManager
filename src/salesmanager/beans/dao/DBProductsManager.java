@@ -111,6 +111,14 @@ public class DBProductsManager extends DBManager {
         dbDisconnect();
         return products;
     }
+    
+    public static int countInvoiceProducts(int code) throws SQLException {
+        String query = "SELECT count(*) FROM products p, invoices i WHERE p.invoice = i.code AND i.code = " + code;
+        dbConnect();
+        Number result = parseValueResultSet(dbSelect(query));
+        dbDisconnect();
+        return result.intValue();
+    }
 
     public static Movement getProductArrivalMovement(Product p) throws SQLException {
         String query = "SELECT * FROM movements WHERE "

@@ -5,6 +5,7 @@
  */
 package salesmanager.graphics.panels;
 
+import java.awt.print.PageFormat;
 import java.awt.print.PrinterException;
 import java.awt.print.PrinterJob;
 import java.sql.SQLException;
@@ -12,6 +13,7 @@ import java.util.Date;
 import javax.swing.JOptionPane;
 import salesmanager.beans.Invoice;
 import salesmanager.beans.dao.DBInvoicesManager;
+import salesmanager.beans.dao.DBProductsManager;
 import salesmanager.graphics.Main;
 import salesmanager.graphics.dialogs.InvoiceDetailsDialog;
 import salesmanager.graphics.tables.InvoicesTableModel;
@@ -60,6 +62,7 @@ public class InvoicesListPanel extends javax.swing.JPanel implements Loadable {
         btnPrint = new javax.swing.JButton();
         btnDelete = new javax.swing.JButton();
         btnInvoiceDetails = new javax.swing.JButton();
+        printOnlyInvoiceBtn = new javax.swing.JButton();
 
         setLayout(new java.awt.BorderLayout());
 
@@ -137,7 +140,7 @@ public class InvoicesListPanel extends javax.swing.JPanel implements Loadable {
         gridBagConstraints.insets = new java.awt.Insets(5, 5, 5, 5);
         pnEast.add(btnClose, gridBagConstraints);
 
-        btnPrint.setText("Stampa fattura");
+        btnPrint.setText("Stampa fattura e ricevuta cliente");
         btnPrint.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 btnPrintActionPerformed(evt);
@@ -145,7 +148,7 @@ public class InvoicesListPanel extends javax.swing.JPanel implements Loadable {
         });
         gridBagConstraints = new java.awt.GridBagConstraints();
         gridBagConstraints.gridx = 0;
-        gridBagConstraints.gridy = 1;
+        gridBagConstraints.gridy = 2;
         gridBagConstraints.fill = java.awt.GridBagConstraints.HORIZONTAL;
         gridBagConstraints.insets = new java.awt.Insets(5, 5, 5, 5);
         pnEast.add(btnPrint, gridBagConstraints);
@@ -158,7 +161,7 @@ public class InvoicesListPanel extends javax.swing.JPanel implements Loadable {
         });
         gridBagConstraints = new java.awt.GridBagConstraints();
         gridBagConstraints.gridx = 0;
-        gridBagConstraints.gridy = 2;
+        gridBagConstraints.gridy = 3;
         gridBagConstraints.fill = java.awt.GridBagConstraints.HORIZONTAL;
         gridBagConstraints.insets = new java.awt.Insets(5, 5, 5, 5);
         pnEast.add(btnDelete, gridBagConstraints);
@@ -171,10 +174,23 @@ public class InvoicesListPanel extends javax.swing.JPanel implements Loadable {
         });
         gridBagConstraints = new java.awt.GridBagConstraints();
         gridBagConstraints.gridx = 0;
-        gridBagConstraints.gridy = 3;
+        gridBagConstraints.gridy = 4;
         gridBagConstraints.fill = java.awt.GridBagConstraints.HORIZONTAL;
         gridBagConstraints.insets = new java.awt.Insets(5, 5, 5, 5);
         pnEast.add(btnInvoiceDetails, gridBagConstraints);
+
+        printOnlyInvoiceBtn.setText("Stampa solo fattura");
+        printOnlyInvoiceBtn.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                printOnlyInvoiceBtnActionPerformed(evt);
+            }
+        });
+        gridBagConstraints = new java.awt.GridBagConstraints();
+        gridBagConstraints.gridx = 0;
+        gridBagConstraints.gridy = 1;
+        gridBagConstraints.fill = java.awt.GridBagConstraints.HORIZONTAL;
+        gridBagConstraints.insets = new java.awt.Insets(5, 5, 5, 5);
+        pnEast.add(printOnlyInvoiceBtn, gridBagConstraints);
 
         add(pnEast, java.awt.BorderLayout.EAST);
     }// </editor-fold>//GEN-END:initComponents
@@ -185,18 +201,28 @@ public class InvoicesListPanel extends javax.swing.JPanel implements Loadable {
             selected = tableInvoices.convertRowIndexToModel(selected);
             Invoice invoice = model.getInvoice(selected);
             if (invoice.getProgressive() == -1) {
-                if(JOptionPane.showConfirmDialog(this, "Non si potranno aggiungere altri prodotti" ,"Chiudere la fattura?", JOptionPane.YES_NO_OPTION) == JOptionPane.YES_OPTION){
-                    try {
-                        invoice.setInvoiceDate(Main.today());
-                        DBInvoicesManager.setProgressive(invoice);
-                    } catch (SQLException ex) {
-                        JOptionPane.showMessageDialog(this, "Impossibile chiudere la fattura", "Errore", JOptionPane.ERROR_MESSAGE);
+                try {
+                    if (DBProductsManager.countInvoiceProducts(invoice.getCode()) > 0) {
+                        if (JOptionPane.showConfirmDialog(this, "Non si potranno aggiungere altri prodotti", "Chiudere la fattura?", JOptionPane.YES_NO_OPTION) == JOptionPane.YES_OPTION) {
+                            try {
+                                invoice.setInvoiceDate(Main.today());
+                                DBInvoicesManager.setProgressive(invoice);
+                            } catch (SQLException ex) {
+                                JOptionPane.showMessageDialog(this, "Impossibile chiudere la fattura", "Errore", JOptionPane.ERROR_MESSAGE);
+                            }
+                            try {
+                                model.loadInvoices((Date) txtDa.getValue(), (Date) txtA.getValue());
+                            } catch (SQLException ex) {
+                                JOptionPane.showMessageDialog(this, "Impossibile caricare le fatture", "Errore", JOptionPane.ERROR_MESSAGE);
+                            }
+                        }
+                    } else {
+
+                        JOptionPane.showMessageDialog(this, "La fattura è vuota", "Attenzione", JOptionPane.WARNING_MESSAGE);
                     }
-                    try {
-                        model.loadInvoices((Date) txtDa.getValue(), (Date) txtA.getValue());
-                    } catch (SQLException ex) {
-                        JOptionPane.showMessageDialog(this, "Impossibile caricare le fatture", "Errore", JOptionPane.ERROR_MESSAGE);
-                    }
+                } catch (SQLException ex) {
+
+                    JOptionPane.showMessageDialog(this, "ERRORE", "Attenzione", JOptionPane.ERROR_MESSAGE);
                 }
             } else {
                 JOptionPane.showMessageDialog(this, "La fattura è già stata chiusa", "Attenzione", JOptionPane.WARNING_MESSAGE);
@@ -234,21 +260,23 @@ public class InvoicesListPanel extends javax.swing.JPanel implements Loadable {
     }//GEN-LAST:event_btnDeleteActionPerformed
 
     private void btnPrintActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnPrintActionPerformed
-        int selected = tableInvoices.getSelectedRow();
-        if (selected != -1) {
-            Invoice invoice = model.getInvoice(tableInvoices.convertRowIndexToModel(selected));
-            if (invoice.getProgressive() != -1) {
-                PrinterJob pj = PrinterJob.getPrinterJob();
-                pj.setPrintable(new ProductsInvoiceForm(invoice));
-                if (pj.printDialog()) {
-                    try {
-                        pj.print();
-                    } catch (PrinterException ex) {
-                        JOptionPane.showMessageDialog(this, "Impossibile stampare");
+        int[] selected = tableInvoices.getSelectedRows();
+        if (selected.length > 0) {
+            PrinterJob pj = PrinterJob.getPrinterJob();
+            if (pj.printDialog()) {
+                for (int i = 0; i < selected.length; i++) {
+                    Invoice invoice = model.getInvoice(tableInvoices.convertRowIndexToModel(selected[i]));
+                    if (invoice.getProgressive() != -1) {
+                        pj.setPrintable(new ProductsInvoiceForm(invoice, false));
+                        try {
+                            pj.print();
+                        } catch (PrinterException ex) {
+                            JOptionPane.showMessageDialog(this, "Impossibile stampare");
+                        }
+                    } else {
+                        JOptionPane.showMessageDialog(this, "La fattura dev'essere chiusa", "Attenzione", JOptionPane.WARNING_MESSAGE);
                     }
                 }
-            } else {
-                JOptionPane.showMessageDialog(this, "La fattura dev'essere chiusa", "Attenzione", JOptionPane.WARNING_MESSAGE);
             }
         }
     }//GEN-LAST:event_btnPrintActionPerformed
@@ -262,6 +290,28 @@ public class InvoicesListPanel extends javax.swing.JPanel implements Loadable {
         }
     }//GEN-LAST:event_btnInvoiceDetailsActionPerformed
 
+    private void printOnlyInvoiceBtnActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_printOnlyInvoiceBtnActionPerformed
+        int[] selected = tableInvoices.getSelectedRows();
+        if (selected.length > 0) {
+            PrinterJob pj = PrinterJob.getPrinterJob();
+            if (pj.printDialog()) {
+                for (int i = 0; i < selected.length; i++) {
+                    Invoice invoice = model.getInvoice(tableInvoices.convertRowIndexToModel(selected[i]));
+                    if (invoice.getProgressive() != -1) {
+                        pj.setPrintable(new ProductsInvoiceForm(invoice, true));
+                        try {
+                            pj.print();
+                        } catch (PrinterException ex) {
+                            JOptionPane.showMessageDialog(this, "Impossibile stampare");
+                        }
+                    } else {
+                        JOptionPane.showMessageDialog(this, "La fattura dev'essere chiusa", "Attenzione", JOptionPane.WARNING_MESSAGE);
+                    }
+                }
+            }
+        }
+    }//GEN-LAST:event_printOnlyInvoiceBtnActionPerformed
+
     // Variables declaration - do not modify//GEN-BEGIN:variables
     private javax.swing.JButton btnClose;
     private javax.swing.JButton btnDates;
@@ -274,6 +324,7 @@ public class InvoicesListPanel extends javax.swing.JPanel implements Loadable {
     private javax.swing.JPanel pnCenter;
     private javax.swing.JPanel pnEast;
     private javax.swing.JPanel pnNorth;
+    private javax.swing.JButton printOnlyInvoiceBtn;
     private javax.swing.JTable tableInvoices;
     private javax.swing.JFormattedTextField txtA;
     private javax.swing.JFormattedTextField txtDa;

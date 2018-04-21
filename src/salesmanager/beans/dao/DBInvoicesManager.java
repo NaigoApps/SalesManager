@@ -93,6 +93,17 @@ public class DBInvoicesManager extends DBManager {
         return invoices;
     }
 
+    public static Invoice[] getClosedInvoices(int year) throws SQLException {
+        String query = "SELECT * FROM invoices WHERE "
+                + "YEAR(invoiceDate) = " + year + " AND "
+                + "progressive IS NOT NULL "
+                + "ORDER BY invoiceDate, progressive;";
+        dbConnect();
+        Invoice[] invoices = parseInvoicesResultSet(dbSelect(query));
+        dbDisconnect();
+        return invoices;
+    }
+
     public static Invoice[] getOpenInvoices() throws SQLException {
         String query = "SELECT * FROM invoices WHERE progressive IS NULL;";
         dbConnect();

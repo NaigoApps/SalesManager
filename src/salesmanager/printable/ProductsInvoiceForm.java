@@ -32,8 +32,8 @@ public class ProductsInvoiceForm extends DefaultForm {
     private Image imageLogo;
     private Invoice invoice;
 
-    public ProductsInvoiceForm(Invoice invoice) {
-        super(2);
+    public ProductsInvoiceForm(Invoice invoice, boolean onlyInvoice) {
+        super(onlyInvoice ? 1 : 2);
         setHMargin(10);
         setVMargin(10);
         this.invoice = invoice;
@@ -84,14 +84,12 @@ public class ProductsInvoiceForm extends DefaultForm {
         double top = getLine();
 
         g.setFont(new Font("Arial", Font.BOLD, 9));
-        FormTable ft = new FormTable(new double[]{100}, new double[]{5, 8, 22, 15, 15, 25, 10}, new Rectangle(getLeft(pf), top, getRight(pf) - getLeft(pf), pts(8)));
+        FormTable ft = new FormTable(new double[]{100}, new double[]{10, 15, 30, 30, 15}, new Rectangle(getLeft(pf), top, getRight(pf) - getLeft(pf), pts(8)));
         ft.drawCenteredString("Q.tà", 0, 0, g);
         ft.drawCenteredString("Doc", 0, 1, g);
         ft.drawCenteredString("Descrizione", 0, 2, g);
-        ft.drawCenteredString("Data di entrata", 0, 3, g);
-        ft.drawCenteredString("Data di vendita", 0, 4, g);
-        ft.drawCenteredString("Totale pattuito compr. IVA", 0, 5, g);
-        ft.drawCenteredString("Provv.", 0, 6, g);
+        ft.drawCenteredString("Totale pattuito compr. IVA", 0, 3, g);
+        ft.drawCenteredString("Provv.", 0, 4, g);
         g.setFont(new Font("Arial", Font.PLAIN, 8));
         top += pts(8);
         Product[] products = null;
@@ -101,7 +99,7 @@ public class ProductsInvoiceForm extends DefaultForm {
             products = new Product[0];
         }
         float tot = 0, realTot = 0;
-        ft = new FormTable(Invoice.MAX_PRODUCTS, new double[]{5, 8, 22, 15, 15, 25, 10}, new Rectangle(getLeft(pf), top, getRight(pf) - getLeft(pf), Invoice.MAX_PRODUCTS * pts(6)));
+        ft = new FormTable(Invoice.MAX_PRODUCTS, new double[]{10, 15, 30, 30, 15}, new Rectangle(getLeft(pf), top, getRight(pf) - getLeft(pf), Invoice.MAX_PRODUCTS * pts(6)));
         for (int i = 0; i < Invoice.MAX_PRODUCTS; i++) {
             if (i < products.length) {
                 printProduct(ft, products[i], i, g);
@@ -161,14 +159,12 @@ public class ProductsInvoiceForm extends DefaultForm {
         double top = getLine();
 
         g.setFont(new Font("Arial", Font.BOLD, 9));
-        FormTable ft = new FormTable(new double[]{100}, new double[]{5, 8, 22, 15, 15, 25, 10}, new Rectangle(getLeft(pf), top, getRight(pf) - getLeft(pf), pts(8)));
+        FormTable ft = new FormTable(new double[]{100}, new double[]{10, 15, 30, 30, 15}, new Rectangle(getLeft(pf), top, getRight(pf) - getLeft(pf), pts(8)));
         ft.drawCenteredString("Q.tà", 0, 0, g);
         ft.drawCenteredString("Doc.", 0, 1, g);
         ft.drawCenteredString("Descrizione", 0, 2, g);
-        ft.drawCenteredString("Data di entrata", 0, 3, g);
-        ft.drawCenteredString("Data di vendita", 0, 4, g);
-        ft.drawCenteredString("Totale pattuito compr. IVA", 0, 5, g);
-        ft.drawCenteredString("Provv.", 0, 6, g);
+        ft.drawCenteredString("Totale pattuito compr. IVA", 0, 3, g);
+        ft.drawCenteredString("Provv.", 0, 4, g);
         g.setFont(new Font("Arial", Font.PLAIN, 8));
         top += pts(8);
         Product[] products = null;
@@ -178,7 +174,7 @@ public class ProductsInvoiceForm extends DefaultForm {
             products = new Product[0];
         }
         float tot = 0;
-        ft = new FormTable(Invoice.MAX_PRODUCTS, new double[]{5, 8, 22, 15, 15, 25, 10}, new Rectangle(getLeft(pf), top, getRight(pf) - getLeft(pf), Invoice.MAX_PRODUCTS * pts(6)));
+        ft = new FormTable(Invoice.MAX_PRODUCTS, new double[]{10, 15, 30, 30, 15}, new Rectangle(getLeft(pf), top, getRight(pf) - getLeft(pf), Invoice.MAX_PRODUCTS * pts(6)));
         for (int i = 0; i < Invoice.MAX_PRODUCTS; i++) {
             if (i < products.length) {
                 printProduct(ft, products[i], i, g);
@@ -188,7 +184,7 @@ public class ProductsInvoiceForm extends DefaultForm {
         }
         ft.paint(g);
 
-        float iva = tot * 22 / 100;
+        float iva = tot * 22 / 122;
 
         ft = new FormTable(new double[]{25, 25, 25, 25}, new double[]{90, 10}, new Rectangle(getLeft(pf), top + pts(4), getRight(pf) - getLeft(pf), 4 * pts(7)));
 
@@ -242,18 +238,18 @@ public class ProductsInvoiceForm extends DefaultForm {
         f.drawCenteredString(product.getQta() + "", i, 0, g);
         f.drawCenteredString(String.format("%05d", product.getDeliveryDocument()), i, 1, g);
         f.drawCenteredString(product.getName(), i, 2, g);
-        try {
-            f.drawCenteredString(sdf.format(DBProductsManager.getProductArrivalMovement(product).getOperationDate()), i, 3, g);
-        } catch (SQLException ex) {
-            f.drawCenteredString("Errore", i, 3, g);
-        }
-        try {
-            f.drawCenteredString(sdf.format(DBProductsManager.getProductSoldMovement(product).getOperationDate()), i, 4, g);
-        } catch (SQLException ex) {
-            f.drawCenteredString("Errore", i, 4, g);
-        }
-        f.drawCenteredString(String.format("%5.2f€", product.getPrice()), i, 5, g);
-        f.drawCenteredString(product.getCommission() + "%", i, 6, g);
+//        try {
+//            f.drawCenteredString(sdf.format(DBProductsManager.getProductArrivalMovement(product).getOperationDate()), i, 3, g);
+//        } catch (SQLException ex) {
+//            f.drawCenteredString("Errore", i, 3, g);
+//        }
+//        try {
+//            f.drawCenteredString(sdf.format(DBProductsManager.getProductSoldMovement(product).getOperationDate()), i, 4, g);
+//        } catch (SQLException ex) {
+//            f.drawCenteredString("Errore", i, 4, g);
+//        }
+        f.drawCenteredString(String.format("%5.2f€", product.getPrice()), i, 3, g);
+        f.drawCenteredString(product.getCommission() + "%", i, 4, g);
     }
 
 }
